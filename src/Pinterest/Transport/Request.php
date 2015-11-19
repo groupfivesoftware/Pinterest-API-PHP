@@ -34,16 +34,16 @@ class Request {
      * 
      * @var CurlBuilder
      */
-    private $curlbuilder;
+    private $CurlBuilder;
 
     /**
      * Constructor
      * 
-     * @param  CurlBuilder   $curlbuilder
+     * @param  CurlBuilder   $CurlBuilder
      */
-    public function __construct( CurlBuilder $curlbuilder )
+    public function __construct( CurlBuilder $CurlBuilder )
     {
-        $this->curlbuilder = $curlbuilder;
+        $this->CurlBuilder = $CurlBuilder;
     }
 
     /**
@@ -58,12 +58,23 @@ class Request {
     }
 
     /**
-     * Make a get request to the given endpoint
-     * 
+     * Set the host
+     *
      * @access public
-     * @param  string   $endpoint  
-     * @param  array    $parameters
-     * @return [type]
+     * @param  string   $host
+     */
+    public function setHost( $host )
+    {
+        $this->host = $host;
+    }
+
+    /**
+     * Make a get request to the given endpoint
+     *
+     * @access public
+     * @param  string $endpoint
+     * @param  array $parameters
+     * @return mixed [type]
      */
     public function get( $endpoint, array $parameters = array() )
     {
@@ -79,11 +90,12 @@ class Request {
 
     /**
      * Make a post request to the given endpoint
-     * 
+     *
      * @access public
-     * @param  string   $endpoint  
-     * @param  array    $parameters
-     * @return [type]
+     * @param $path
+     * @param  array $parameters
+     * @internal param string $endpoint
+     * @return mixed [type]
      */
     public function post( $path, array $parameters = array() )
     {
@@ -92,11 +104,12 @@ class Request {
 
     /**
      * Make a delete request to the given endpoint
-     * 
+     *
      * @access public
-     * @param  string   $endpoint  
-     * @param  array    $parameters
-     * @return [type]
+     * @param $path
+     * @param  array $parameters
+     * @internal param string $endpoint
+     * @return mixed [type]
      */
     public function delete( $path, array $parameters = array() )
     {
@@ -105,11 +118,12 @@ class Request {
 
     /**
      * Make an update request to the given endpoint
-     * 
+     *
      * @access public
-     * @param  string   $endpoint  
-     * @param  array    $parameters
-     * @return [type]
+     * @param $path
+     * @param  array $parameters
+     * @internal param string $endpoint
+     * @return mixed [type]
      */
     public function update( $path, array $parameters = array() )
     {
@@ -118,12 +132,13 @@ class Request {
 
     /**
      * Execute the http request
-     * 
+     *
      * @access public
-     * @param  string   $method     
-     * @param  string   $apiCall       
-     * @param  array    $parameters 
-     * @param  array    $headers 
+     * @param  string $method
+     * @param  string $apiCall
+     * @param  array $parameters
+     * @param  array $headers
+     * @throws \DirkGroenen\Pinterest\Exceptions\PinterestException
      * @return mixed
      */
     public function execute( $method, $apiCall, array $parameters = array(), $headers = array() )
@@ -137,7 +152,7 @@ class Request {
         }
 
         // Setup CURL
-        $ch = $this->curlbuilder->create();
+        $ch = $this->CurlBuilder->create();
 
         // Set default options
         $ch->setOptions( array(
