@@ -1,9 +1,9 @@
-<?php 
+<?php
 /**
- * Copyright 2015 Dirk Groenen 
+ * Copyright 2015 Dirk Groenen
  *
  * (c) Dirk Groenen <dirk@bitlabs.nl>
- * 
+ *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
@@ -25,14 +25,14 @@ class Model implements \JsonSerializable {
 
     /**
      * The available object keys
-     * 
+     *
      * @var array
      */
     protected $fillable = [];
 
     /**
      * Instance of the master Pinterest class
-     * 
+     *
      * @var Pinterest
      */
     protected $master;
@@ -40,26 +40,25 @@ class Model implements \JsonSerializable {
     /**
      * Create a new model instance
      *
-     * @param  Pinterest                    $master
-     * @param  array|Transport\Response     $modeldata
-     * @return void
+     * @param  Pinterest  $master
+     * @param  mixed      $modeldata
      */
-    public function __construct( Pinterest $master, $modeldata = null )
-    {   
+    public function __construct(Pinterest $master, $modeldata = null)
+    {
         $this->master = $master;
 
         // Fill the model
-        if( is_array($modeldata) ){
+        if (is_array($modeldata)) {
             $this->fill($modeldata);
         }
-        else if( $modeldata instanceof \DirkGroenen\Pinterest\Transport\Response ){
-            $this->fill($modeldata->data);    
+        else if ($modeldata instanceof \DirkGroenen\Pinterest\Transport\Response) {
+            $this->fill($modeldata->data);
         }
     }
 
     /**
      * Get the model's attribute
-     * 
+     *
      * @access public
      * @param  string   $key
      * @return mixed
@@ -71,7 +70,7 @@ class Model implements \JsonSerializable {
 
     /**
      * Set the model's attribute
-     * 
+     *
      * @access public
      * @param  string   $key
      * @param  mixed   $value
@@ -80,11 +79,10 @@ class Model implements \JsonSerializable {
      */
     public function __set($key, $value)
     {
-        if($this->isFillable($key)){
+        if ($this->isFillable($key)) {
             $this->attributes[$key] = $value;
-        }
-        else{
-            throw new PinterestException( sprintf("%s is not a fillable attribute.", $key) );
+        } else {
+            throw new PinterestException(sprintf("%s is not a fillable attribute.", $key));
         }
     }
 
@@ -108,8 +106,8 @@ class Model implements \JsonSerializable {
      */
     private function fill(array $attributes)
     {
-        foreach($attributes as $key => $value){
-            if($this->isFillable($key)){
+        foreach ($attributes as $key => $value) {
+            if ($this->isFillable($key)) {
                 $this->attributes[$key] = $value;
             }
         }
@@ -117,10 +115,10 @@ class Model implements \JsonSerializable {
 
     /**
      * Check if the key is fillable
-     * 
+     *
      * @access public
      * @param  string   $key
-     * @return boolean      
+     * @return boolean
      */
     public function isFillable($key)
     {
@@ -136,8 +134,8 @@ class Model implements \JsonSerializable {
     public function toArray()
     {
         $array = array();
-        
-        foreach($this->fillable as $key){
+
+        foreach ($this->fillable as $key) {
             $array[$key] = $this->{$key};
         }
 
@@ -146,7 +144,7 @@ class Model implements \JsonSerializable {
 
     /**
      * Convert the model instance to JSON
-     * 
+     *
      * @access public
      * @return string
      */
@@ -168,7 +166,7 @@ class Model implements \JsonSerializable {
 
     /**
      * Convert the model to its string representation
-     * 
+     *
      * @access public
      * @return string
      */
@@ -176,5 +174,4 @@ class Model implements \JsonSerializable {
     {
         return $this->toJson();
     }
-
 }

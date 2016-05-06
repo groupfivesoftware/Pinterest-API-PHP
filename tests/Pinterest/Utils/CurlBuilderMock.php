@@ -1,9 +1,9 @@
 <?php
 /**
- * Copyright 2015 Dirk Groenen 
+ * Copyright 2015 Dirk Groenen
  *
  * (c) Dirk Groenen <dirk@bitlabs.nl>
- * 
+ *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
@@ -13,20 +13,28 @@ namespace DirkGroenen\Pinterest\Tests\Utils;
 class CurlBuilderMock {
 
     /**
-     * Create a new mock of the curlbuilder and return 
+     * Create a new mock of the curlbuilder and return
      * the given filename as content
-     * 
+     *
      * @access public
      * @param  PHPUnit_Framework_TestCase   $instance
      * @return mock
      */
     public static function create( $instance )
-    {   
+    {
         $reflection = new \ReflectionMethod( $instance, $instance->getName() );
         $doc_block  = $reflection->getDocComment();
 
         $responsefile = self::parseDocBlock( $doc_block, '@responsefile' );
         $responsecode = self::parseDocBlock( $doc_block, '@responsecode' );
+
+        $defaultheaders = array(
+            "X-Ratelimit-Limit" => "1000",
+            "X-Ratelimit-Remaining" => "998",
+            "X-Varnish" => "4059929980"
+        );
+
+        $skipmock = self::parseDocBlock( $doc_block, '@skipmock' );
 
         if(empty($responsecode))
             $responsecode = [201];
@@ -38,13 +46,18 @@ class CurlBuilderMock {
         $curlbuilder = $instance->getMockBuilder("\\DirkGroenen\\Pinterest\\Utils\\CurlBuilder")
                         ->getMock();
 
-        $curlbuilder->expects($instance->once())
+        $curlbuilder->expects($instance->any())
             ->method('create')
             ->will($instance->returnSelf());
 
-        $curlbuilder->expects($instance->once())
-            ->method('execute')
-            ->will( $instance->returnValue( file_get_contents( __DIR__ . '/../responses/' . (new \ReflectionClass($instance))->getShortName() . '/' . $responsefile[0] . ".json" ) ) );
+        // Build response file path
+        $responseFilePath = __DIR__ . '/../responses/' . (new \ReflectionClass($instance))->getShortName() . '/' . $responsefile[0] . ".json";
+
+        if(file_exists($responseFilePath)){
+            $curlbuilder->expects($instance->once())
+                ->method('execute')
+                ->will( $instance->returnValue( file_get_contents( $responseFilePath ) ) );
+        }
 
         $curlbuilder->expects($instance->any())
             ->method('getInfo')
@@ -56,11 +69,11 @@ class CurlBuilderMock {
     /**
      * Parse the methods docblock and search for the
      * requested tag's value
-     * 
+     *
      * @access private
-     * @param  string   $doc_block 
-     * @param  string   $tag      
-     * @return array 
+     * @param  string   $doc_block
+     * @param  string   $tag
+     * @return array
      */
     private static function parseDocBlock( $doc_block, $tag ) {
 

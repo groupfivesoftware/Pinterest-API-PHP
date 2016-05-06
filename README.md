@@ -1,9 +1,13 @@
-![](http://i.imgur.com/cacgQlq.png) Pinterest API - PHP  [![](https://travis-ci.org/dirkgroenen/Pinterest-API-PHP.svg)](https://travis-ci.org/dirkgroenen/Pinterest-API-PHP) ![](https://img.shields.io/packagist/v/dirkgroenen/pinterest-api-php.svg)
+## ![](http://i.imgur.com/cacgQlq.png)  Pinterest API - PHP
+
+[![](https://travis-ci.org/dirkgroenen/Pinterest-API-PHP.svg)](https://travis-ci.org/dirkgroenen/Pinterest-API-PHP) 
+[![](https://img.shields.io/scrutinizer/g/dirkgroenen/Pinterest-API-PHP.svg)](https://scrutinizer-ci.com/g/dirkgroenen/Pinterest-API-PHP/?branch=master) 
+[![](https://img.shields.io/scrutinizer/coverage/g/dirkgroenen/Pinterest-API-PHP.svg)](https://scrutinizer-ci.com/g/dirkgroenen/Pinterest-API-PHP/?branch=master) 
+[![Packagist](https://img.shields.io/packagist/v/dirkgroenen/pinterest-api-php.svg)](https://packagist.org/packages/dirkgroenen/pinterest-api-php) 
+[![Support me with some coffee](https://img.shields.io/badge/donate-paypal-orange.svg)](https://www.paypal.me/dirkgroenen)  
 -------------------
 
 A PHP wrapper for the official [Pinterest API](https://dev.pinterest.com).
-
-**Still a work in progress, but all documented methods are working.**
 
 # Requirements
 - PHP 5.4 or higher
@@ -11,7 +15,7 @@ A PHP wrapper for the official [Pinterest API](https://dev.pinterest.com).
 - Registered Pinterest App
 
 # Get started
-To use the Pinterest API you have to register yourself as a developer and [create](https://dev.pinterest.com/apps/) an application. After you've created your app you will receive a `app_id` and `app_secret`. 
+To use the Pinterest API you have to register yourself as a developer and [create](https://dev.pinterest.com/apps/) an application. After you've created your app you will receive a `app_id` and `app_secret`.
 
 > The terms `client_id` and `client_secret` are in this case `app_id` and `app_secret`.
 
@@ -22,7 +26,9 @@ The Pinterest API wrapper is available on Composer.
 composer require dirkgroenen/Pinterest-API-PHP
 ```
 
-## Simple Example 
+If you're not using Composer (which you should start using, unless you've got a good reason not to) you can include the `autoload.php` file in your project. 
+
+## Simple Example
 ```php
 use DirkGroenen\Pinterest\Pinterest;
 
@@ -36,11 +42,20 @@ $loginurl = $pinterest->auth->getLoginUrl(CALLBACK_URL, array('read_public'));
 echo '<a href=' . $loginurl . '>Authorize Pinterest</a>';
 ```
 
-Check the [Pinterest documentation](https://dev.pinterest.com/docs/api/overview/#scopes) for the available scopes. 
+Check the [Pinterest documentation](https://dev.pinterest.com/docs/api/overview/#scopes) for the available scopes.
+
+After your user has used the login link to authorize he will be send back to the given `CALLBACK_URL`. The URL will contain the `code` which can be exchanged into an `access_token`. To exchange the code for an `access_token` and set it you can use the following code:
+
+```php
+if(isset($_GET["code"])){
+    $token = $pinterest->auth->getOAuthToken($_GET["code"]);
+    $pinterest->auth->setOAuthToken($token->access_token);
+}
+```
 
 ## Get the user's profile
 
-To get the profile of the current logged in user you can use the `Users::me(<array>);` method. 
+To get the profile of the current logged in user you can use the `Users::me(<array>);` method.
 
 ```php
 $me = $pinterest->users->me();
@@ -48,11 +63,11 @@ echo $me;
 ```
 
 # Models
-The API wrapper will parse all data through it's corresponding model. This results in the possibility to (for example) directly `echo` your model into a JSON string. 
+The API wrapper will parse all data through it's corresponding model. This results in the possibility to (for example) directly `echo` your model into a JSON string.
 
-Models also show the available fields (which are also described in the Pinterest documentation). By default, not all fields are returned, so this can help you when providing extra fields to the request. 
+Models also show the available fields (which are also described in the Pinterest documentation). By default, not all fields are returned, so this can help you when providing extra fields to the request.
 
-## Available models 
+## Available models
 
 ### [User](https://dev.pinterest.com/docs/api/users/#user-object)
 
@@ -65,7 +80,7 @@ Models also show the available fields (which are also described in the Pinterest
 - name
 
 ## Retrieving extra fields
-If you want more fields you can specify these in the `$data` array. Example:
+If you want more fields you can specify these in the `$data` (GET requests) or `$fields` (PATCH requests) array. Example:
 
 ```php
 $pinterest->users->me();
@@ -86,7 +101,7 @@ Response:
 }
 ```
 
-By default, not all fields are returned. The returned data from the API has been parsed into the `User` model. Every field in this model can be filled by parsing an extra `$data` array with the key `fields`. Say we want the user's username, first_name, last_name and image (small and large): 
+By default, not all fields are returned. The returned data from the API has been parsed into the `User` model. Every field in this model can be filled by parsing an extra `$data` array with the key `fields`. Say we want the user's username, first_name, last_name and image (small and large):
 
 ```php
 $pinterest->users->me(array(
@@ -94,7 +109,7 @@ $pinterest->users->me(array(
 ));
 ```
 
-The response will now be: 
+The response will now be:
 
 ```json
 {
@@ -162,36 +177,78 @@ Returns: `Boolean`
 
 # Available methods
 
-> Every method containing a `data` array can be filled with extra data. This can be for example extra fields or pagination. 
+> Every method containing a `data` array can be filled with extra data. This can be for example extra fields or pagination.
 
-## Authentication 
+## Authentication
 
 The methods below are available through `$pinterest->auth`.
 
 ### Get login URL
-`getLoginUrl(string $redirect_uri, array $scopes);`
+`getLoginUrl(string $redirect_uri, array $scopes, string $response_type = "code");`
 
 ```php
 $pinterest->auth->getLoginUrl("https://pinterest.dev/callback.php", array("read_public"));
 ```
 
-Check the [Pinterest documentation](https://dev.pinterest.com/docs/api/overview/#scopes) for the available scopes. 
+Check the [Pinterest documentation](https://dev.pinterest.com/docs/api/overview/#scopes) for the available scopes.
 
-> At this moment the Pinterest API returns the user's `access_token` in the query string on the callback page. The documentation states that this should be a code, so the next method has been writing assuming this will be changed somewhere in the future
+**Note: since 0.2.0 the default authentication method has changed to `code` instead of `token`. This means you have to exchange the returned code for an access_token.**
 
 ### Get access_token
-`getOAuthToken(string $code );`
+`getOAuthToken( string $code );`
 
 ```php
 $pinterest->auth->getOAuthToken($code);
 ```
 
 ### Set access_token
-`setOAuthToken(string $access_token );`
+`setOAuthToken( string $access_token );`
 
 ```php
 $pinterest->auth->setOAuthToken($access_token);
 ```
+
+### Get state
+`getState();`
+
+```php
+$pinterest->auth->getState();
+```
+
+Returns: `string`
+
+### Set state
+`setState( string $state );`
+
+This method can be used to set a state manually, but this isn't required since the API will automatically generate a random state on initialize.
+
+```php
+$pinterest->auth->setState($state);
+```
+
+## Rate limit
+
+### Get limit
+`getRateLimit();`
+
+This method can be used to get the maximum number of requests.
+
+```php
+$pinterest->getRateLimit();
+```
+
+Returns: `int`
+
+### Get remaining
+`getRateLimitRemaining();`
+
+This method can be used to get the remaining number of calls.
+
+```php
+$pinterest->getRateLimitRemaining();
+```
+
+Returns: `int`
 
 ## Users
 
@@ -262,6 +319,15 @@ $pinterest->users->getMeLikes();
 
 Returns: `Collection<Pin>`
 
+### Get user's followers
+`getMeLikes( array $data );`
+
+```php
+$pinterest->users->getMeFollowers();
+```
+
+Returns: `Collection<Pin>`
+
 ## Boards
 
 The methods below are available through `$pinterest->boards`.
@@ -270,7 +336,7 @@ The methods below are available through `$pinterest->boards`.
 `get( string $board_id, array $data );`
 
 ```php
-$pinterest->boards->get("503066289565421201");
+$pinterest->boards->get("dirkgroenen/pinterest-api-test");
 ```
 
 Returns: `Board`
@@ -287,11 +353,22 @@ $pinterest->boards->create(array(
 
 Returns: `Board`
 
+### Edit board
+`edit( string $board_id, array $data, string $fields = null );`
+
+```php
+$pinterest->boards-edit("dirkgroenen/pinterest-api-test", array(
+    "name"  => "Test board after edit"
+));
+```
+
+Returns: `Board`
+
 ### Delete board
 `delete( string $board_id, array $data );`
 
 ```php
-$pinterest->boards->delete("503066289565421201");
+$pinterest->boards->delete("dirkgroenen/pinterest-api-test");
 ```
 
 Returns: `True|PinterestException`
@@ -313,7 +390,7 @@ Returns: `Pin`
 `fromBoard( string $board_id, array $data );`
 
 ```php
-$pinterest->pins->fromBoard("503066289565421201");
+$pinterest->pins->fromBoard("dirkgroenen/pinterest-api-test");
 ```
 
 Returns: `Collection<Pin>`
@@ -327,7 +404,7 @@ Creating a pin with an image hosted somewhere else:
 $pinterest->pins->create(array(
     "note"          => "Test board from API",
     "image_url"     => "https://download.unsplash.com/photo-1438216983993-cdcd7dea84ce",
-    "board"         => "503066289565421201"
+    "board"         => "dirkgroenen/pinterest-api-test"
 ));
 ```
 
@@ -337,7 +414,7 @@ Creating a pin with an image located on the server:
 $pinterest->pins->create(array(
     "note"          => "Test board from API",
     "image"         => "/path/to/image.png",
-    "board"         => "503066289565421201"
+    "board"         => "dirkgroenen/pinterest-api-test"
 ));
 ```
 
@@ -347,20 +424,21 @@ Creating a pin with a base64 encoded image:
 $pinterest->pins->create(array(
     "note"          => "Test board from API",
     "image_base64"  => "[base64 encoded image]",
-    "board"         => "503066289565421201"
+    "board"         => "dirkgroenen/pinterest-api-test"
 ));
 ```
 
 
 Returns: `Pin`
 
-### Update pin
-> According to the Pinterest documentation this endpoint exists, but for some reason their API is returning an error at the moment of writing.
+### Edit pin
 
-`update( string $pin_id, array $data );`
+`edit( string $pin_id, array $data, string $fields = null );`
 
 ```php
-$pinterest->pins->update("181692166190246650");
+$pinterest->pins->edit("181692166190246650", array(
+    "note"  => "Updated name"
+));
 ```
 
 Returns: `Pin`
@@ -467,4 +545,4 @@ Returns: `True|PinterestException`
 
 # Examples
 
-Please check [https://bitlabs.nl/pinterest](https://bitlabs.nl/pinterest) for an example project.
+There are no examples available yet. Let me know if you have an (example) project using the this library.

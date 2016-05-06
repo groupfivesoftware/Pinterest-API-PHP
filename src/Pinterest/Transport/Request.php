@@ -1,9 +1,9 @@
-<?php 
+<?php
 /**
- * Copyright 2015 Dirk Groenen 
+ * Copyright 2015 Dirk Groenen
  *
  * (c) Dirk Groenen <dirk@bitlabs.nl>
- * 
+ *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
@@ -14,7 +14,7 @@ use DirkGroenen\Pinterest\Utils\CurlBuilder;
 use DirkGroenen\Pinterest\Exceptions\PinterestException;
 
 class Request {
-    
+
     /**
      * Host to make the calls to
      *
@@ -24,35 +24,43 @@ class Request {
 
     /**
      * Access token
-     * 
+     *
      * @var string
      */
     protected $access_token = null;
 
     /**
      * Instance of the CurlBuilder class
-     * 
+     *
      * @var CurlBuilder
      */
-    private $CurlBuilder;
+    private $curlbuilder;
+
+    /**
+     * Array with the headers from the last request
+     *
+     * @var array
+     */
+    private $headers;
 
     /**
      * Constructor
      * 
-     * @param  CurlBuilder   $CurlBuilder
+     * @param  CurlBuilder   $curlbuilder
      */
-    public function __construct( CurlBuilder $CurlBuilder )
+    public function __construct( CurlBuilder $curlbuilder )
     {
-        $this->CurlBuilder = $CurlBuilder;
+        $this->curlbuilder = $curlbuilder;
     }
 
     /**
      * Set the access token
-     * 
+     *
      * @access public
      * @param  string   $token
+     * @return void
      */
-    public function setAccessToken( $token )
+    public function setAccessToken($token)
     {
         $this->access_token = $token;
     }
@@ -70,18 +78,17 @@ class Request {
 
     /**
      * Make a get request to the given endpoint
-     *
+     * 
      * @access public
-     * @param  string $endpoint
-     * @param  array $parameters
-     * @return mixed [type]
+     * @param  string   $endpoint  
+     * @param  array    $parameters
+     * @return [type]
      */
-    public function get( $endpoint, array $parameters = array() )
+    public function get($endpoint, array $parameters = array())
     {
-        if(!empty($parameters)) {
+        if (!empty($parameters)) {
             $path = sprintf("%s/?%s", $endpoint, http_build_query($parameters));
-        }
-        else {
+        } else {
             $path = $endpoint;
         }
 
@@ -90,72 +97,84 @@ class Request {
 
     /**
      * Make a post request to the given endpoint
-     *
+     * 
      * @access public
-     * @param $path
-     * @param  array $parameters
-     * @internal param string $endpoint
-     * @return mixed [type]
+     * @param  string   $endpoint  
+     * @param  array    $parameters
+     * @return [type]
      */
-    public function post( $path, array $parameters = array() )
+    public function post($endpoint, array $parameters = array())
     {
-        return $this->execute("POST", sprintf("%s%s", $this->host, $path) . "/", $parameters );
+        return $this->execute("POST", sprintf("%s%s", $this->host, $endpoint), $parameters);
     }
 
     /**
      * Make a delete request to the given endpoint
-     *
+     * 
      * @access public
-     * @param $path
-     * @param  array $parameters
-     * @internal param string $endpoint
-     * @return mixed [type]
+     * @param  string   $endpoint  
+     * @param  array    $parameters
+     * @return [type]
      */
-    public function delete( $path, array $parameters = array() )
+    public function delete($endpoint, array $parameters = array())
     {
-        return $this->execute("DELETE", sprintf("%s%s", $this->host, $path) . "/", $parameters );
+        return $this->execute("DELETE", sprintf("%s%s", $this->host, $endpoint) . "/", $parameters);
     }
 
     /**
      * Make an update request to the given endpoint
-     *
+     * 
      * @access public
-     * @param $path
-     * @param  array $parameters
-     * @internal param string $endpoint
-     * @return mixed [type]
+     * @param  string   $endpoint  
+     * @param  array    $parameters
+     * @return [type]
      */
-    public function update( $path, array $parameters = array() )
+    public function update($endpoint, array $parameters = array(), array $queryparameters = array())
     {
-        return $this->execute("PATCH", sprintf("%s%s", $this->host, $path) . "/", $parameters );
+        if (!empty($queryparameters)) {
+            $path = sprintf("%s/?%s", $endpoint, http_build_query($queryparameters));
+        } else {
+            $path = $endpoint;
+        }
+
+        return $this->execute("PATCH", sprintf("%s%s", $this->host, $path), $parameters);
+    }
+
+    /**
+     * Return the headers from the last request
+     *
+     * @return array
+     */
+    public function getHeaders()
+    {
+        return $this->headers;
     }
 
     /**
      * Execute the http request
-     *
+     * 
      * @access public
-     * @param  string $method
-     * @param  string $apiCall
-     * @param  array $parameters
-     * @param  array $headers
-     * @throws \DirkGroenen\Pinterest\Exceptions\PinterestException
+     * @param  string   $method     
+     * @param  string   $apiCall       
+     * @param  array    $parameters 
+     * @param  array    $headers 
      * @return mixed
      */
-    public function execute( $method, $apiCall, array $parameters = array(), $headers = array() )
-    {   
-        // Check if the access token needs to be added 
-        if($this->access_token != null){
+    public function execute($method, $apiCall, array $parameters = array(), $headers = array())
+    {
+        // Check if the access token needs to be added
+        if ($this->access_token != null) {
             $headers = array_merge($headers, array(
                 "Authorization: Bearer " . $this->access_token,
-                "Content-ype: multipart/form-data",
+                "Content-type: application/x-www-form-urlencoded; charset=UTF-8",
             ));
         }
 
         // Setup CURL
-        $ch = $this->CurlBuilder->create();
+        $ch = $this->curlbuilder->create();
 
         // Set default options
-        $ch->setOptions( array(
+        $ch->setOptions(array(
             CURLOPT_URL             => $apiCall,
             CURLOPT_HTTPHEADER      => $headers,
             CURLOPT_CONNECTTIMEOUT  => 20,
@@ -164,53 +183,59 @@ class Request {
             CURLOPT_SSL_VERIFYPEER  => false,
             CURLOPT_SSL_VERIFYHOST  => false,
             CURLOPT_HEADER          => false,
-            CURLINFO_HEADER_OUT     => true,
-            CURLOPT_FOLLOWLOCATION  => true
-        ) );
+            CURLINFO_HEADER_OUT     => true
+        ));
 
         switch ($method) {
             case 'POST':
-                $ch->setOptions( array(
-                    CURLOPT_CUSTOMREQUEST   => 'POST',
+                $ch->setOptions(array(
+                    CURLOPT_CUSTOMREQUEST   => "POST",
                     CURLOPT_POST            => count($parameters),
-                    CURLOPT_POSTFIELDS      => $parameters
-                ) );
+                    CURLOPT_POSTFIELDS      => http_build_query($parameters)
+                ));
 
-                if(defined('CURLOPT_SAFE_UPLOAD'))
-                    $ch->setOption( CURLOPT_SAFE_UPLOAD, false );
+                if (!class_exists("\CURLFile") && defined('CURLOPT_SAFE_UPLOAD')) {
+                    $ch->setOption(CURLOPT_SAFE_UPLOAD, false);
+                }
 
                 break;
             case 'DELETE':
-                $ch->setOption( CURLOPT_CUSTOMREQUEST, "DELETE" );
+                $ch->setOption(CURLOPT_CUSTOMREQUEST, "DELETE");
                 break;
             case 'PATCH':
-                $ch->setOption( CURLOPT_CUSTOMREQUEST, "PATCH" );
+                $ch->setOptions(array(
+                    CURLOPT_CUSTOMREQUEST   => "PATCH",
+                    CURLOPT_POST            => count($parameters),
+                    CURLOPT_POSTFIELDS      => http_build_query($parameters)
+                ));
                 break;
             default:
-                $ch->setOption( CURLOPT_CUSTOMREQUEST, "GET" );
+                $ch->setOption(CURLOPT_CUSTOMREQUEST, "GET");
                 break;
         }
 
-        
         // Execute request and catch response
         $response_data = $ch->execute();
 
         // Check if we have a valid response
-        if ( !$response_data || $ch->hasErrors() ) {
-            throw new PinterestException( 'Error: execute() - cURL error: ' . $ch->getErrors() );
+        if (!$response_data || $ch->hasErrors()) {
+            throw new PinterestException('Error: execute() - cURL error: ' . $ch->getErrors(), $ch->getErrorNumber());
         }
 
         // Initiate the response
         $response = new Response($response_data, $ch);
 
         // Check the response code
-        if ( $response->getResponseCode() >= 400 ) {
-            throw new PinterestException( 'Pinterest error (code: ' . $response->getResponseCode() . ') with message: ' . $response->message );
+        if ($response->getResponseCode() >= 400) {
+            throw new PinterestException('Pinterest error (code: ' . $response->getResponseCode() . ') with message: ' . $response->getMessage(), $response->getResponseCode());
         }
+
+        // Get headers from last request
+        $this->headers = $ch->getHeaders();
 
         // Close curl resource
         $ch->close();
-        
+
         // Return the response
         return $response;
     }
